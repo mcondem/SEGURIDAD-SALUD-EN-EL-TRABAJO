@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard SST — INTEGRADO</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --surface: #131720;
+    --surface2: #1a2030;
+    --border: #252d3d;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --red: #ff3b5c;
+    --orange: #ff8c00;
+    --yellow: #f5c518;
+    --green: #00e676;
+    --text: #e8edf5;
+    --muted: #6b7a99;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 24px 48px; }
+
+  /* HEADER */
+  header {
+    padding: 32px 0 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header-left {}
+  .header-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 5vw, 60px);
+    letter-spacing: 2px;
+    line-height: 1;
+    background: linear-gradient(135deg, #e8edf5 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header-right {
+    text-align: right;
+  }
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--green);
+    border: 1px solid var(--green);
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .live-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .date-display {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .tab {
+    padding: 10px 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    letter-spacing: 4px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* KPI CARDS */
+  .kpi-row {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .kpi-row-5 { grid-template-columns: repeat(5, 1fr); }
+  .kpi-row-4 { grid-template-columns: repeat(4, 1fr); }
+  .kpi-row-3 { grid-template-columns: repeat(3, 1fr); }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s, transform .2s;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .kpi-card.blue::before { background: var(--accent); }
+  .kpi-card.purple::before { background: var(--accent2); }
+  .kpi-card.red::before { background: var(--red); }
+  .kpi-card.orange::before { background: var(--orange); }
+  .kpi-card.yellow::before { background: var(--yellow); }
+  .kpi-card.green::before { background: var(--green); }
+
+  .kpi-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  .kpi-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .kpi-value {
+    font-family: var(--font-display);
+    font-size: 42px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .kpi-card.blue .kpi-value { color: var(--accent); }
+  .kpi-card.purple .kpi-value { color: #a78bfa; }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.orange .kpi-value { color: var(--orange); }
+  .kpi-card.yellow .kpi-value { color: var(--yellow); }
+  .kpi-card.green .kpi-value { color: var(--green); }
+
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+
+  /* SEMAFORO ROW */
+  .semaforo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .sem-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .sem-dot {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .sem-dot.red { background: rgba(255,59,92,0.15); color: var(--red); border: 2px solid var(--red); }
+  .sem-dot.orange { background: rgba(255,140,0,0.15); color: var(--orange); border: 2px solid var(--orange); }
+  .sem-dot.yellow { background: rgba(245,197,24,0.15); color: var(--yellow); border: 2px solid var(--yellow); }
+  .sem-dot.green { background: rgba(0,230,118,0.15); color: var(--green); border: 2px solid var(--green); }
+  .sem-info {}
+  .sem-label { font-size: 11px; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; }
+  .sem-value { font-family: var(--font-display); font-size: 28px; line-height: 1.2; }
+
+  /* CHARTS */
+  .charts-grid {
+    display: grid;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .charts-2 { grid-template-columns: 1fr 1fr; }
+  .charts-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .charts-12 { grid-template-columns: 1fr 2fr; }
+  .charts-21 { grid-template-columns: 2fr 1fr; }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .chart-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .chart-container { position: relative; }
+
+  /* ALERT TABLE */
+  .alert-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .table-header-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 4px 12px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    border-radius: 20px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    transition: all .2s;
+    text-transform: uppercase;
+  }
+  .filter-btn.active, .filter-btn:hover { color: var(--text); border-color: var(--accent); background: rgba(0,212,255,0.08); }
+  .filter-btn.red.active { border-color: var(--red); background: rgba(255,59,92,0.08); color: var(--red); }
+  .filter-btn.orange.active { border-color: var(--orange); background: rgba(255,140,0,0.08); color: var(--orange); }
+  .filter-btn.yellow.active { border-color: var(--yellow); background: rgba(245,197,24,0.08); color: var(--yellow); }
+  .filter-btn.greenf.active { border-color: var(--green); background: rgba(0,230,118,0.08); color: var(--green); }
+
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    padding: 10px 16px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    text-align: left;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 11px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(37,45,61,0.6);
+    vertical-align: middle;
+  }
+  .data-table tr:hover td { background: var(--surface2); }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge::before { content: '●'; font-size: 8px; }
+  .badge.vencido { background: rgba(255,59,92,0.12); color: var(--red); border: 1px solid rgba(255,59,92,0.3); }
+  .badge.critico { background: rgba(255,140,0,0.12); color: var(--orange); border: 1px solid rgba(255,140,0,0.3); }
+  .badge.porvencer { background: rgba(245,197,24,0.12); color: var(--yellow); border: 1px solid rgba(245,197,24,0.3); }
+  .badge.vigente { background: rgba(0,230,118,0.12); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+
+  .dias-bar-wrap { display: flex; align-items: center; gap: 10px; }
+  .dias-num { font-family: var(--font-mono); font-size: 12px; min-width: 44px; text-align: right; }
+  .dias-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; min-width: 60px; }
+  .dias-bar-fill { height: 100%; border-radius: 2px; transition: width .5s; }
+
+  /* PROGRESS BAR */
+  .progress-section { margin-bottom: 32px; }
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .progress-label { font-size: 13px; min-width: 220px; }
+  .progress-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .progress-pct { font-family: var(--font-mono); font-size: 12px; color: var(--muted); min-width: 40px; text-align: right; }
+
+  /* ACCIDENTES */
+  .acc-doc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .doc-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+  .doc-stat-val { font-family: var(--font-display); font-size: 36px; margin-bottom: 4px; }
+  .doc-stat-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+
+  /* SCROLLABLE TABLE */
+  .table-scroll { overflow-x: auto; max-height: 420px; overflow-y: auto; }
+  .table-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+  .table-scroll::-webkit-scrollbar-track { background: var(--surface2); }
+  .table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* REGIONAL SECTION */
+  .regional-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .reg-item { font-family: var(--font-mono); font-size: 10px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .reg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .kpi-row-5, .kpi-row-4 { grid-template-columns: repeat(2, 1fr); }
+    .semaforo-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-2, .charts-12, .charts-21 { grid-template-columns: 1fr; }
+    .charts-3 { grid-template-columns: 1fr; }
+  }
+
+  .no-data { text-align: center; padding: 40px; color: var(--muted); font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; }
+
+  .regional-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .reg-name { font-size: 12px; min-width: 140px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .reg-bar { flex: 1; height: 20px; background: var(--surface2); border-radius: 3px; overflow: hidden; position: relative; }
+  .reg-bar-fill { height: 100%; border-radius: 3px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-family: var(--font-mono); font-size: 10px; color: var(--bg); font-weight: 600; transition: width 1s ease; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="header-tag">Sistema de Gestión · SST · INTEGRADO</div>
+      <h1>SEGURIDAD Y SALUD EN EL TRABAJO</h1>
+    </div>
+    <div class="header-right">
+      <div class="live-badge">DATOS EN TIEMPO REAL</div>
+      <div class="date-display" id="currentDate"></div>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('resumen')">📊 Resumen Ejecutivo</button>
+    <button class="tab" onclick="switchTab('alertas')">🚨 Alertas de Vencimiento</button>
+    <button class="tab" onclick="switchTab('comites')">📋 Comités & PGSST</button>
+    <button class="tab" onclick="switchTab('accidentes')">🏥 Accidentes Laborales</button>
+  </div>
+
+  <!-- ===== PAGE 1: RESUMEN EJECUTIVO ===== -->
+  <div class="page active" id="page-resumen">
+
+    <div class="section-title">KPIs Globales</div>
+    <div class="kpi-row kpi-row-5">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Total Sucursales / Comités</div>
+        <div class="kpi-value">101</div>
+        <div class="kpi-sub">registros activos</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-label">Total PGSST</div>
+        <div class="kpi-value">101</div>
+        <div class="kpi-sub">programas SST</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Total Alertas Críticas</div>
+        <div class="kpi-value" id="totalAlertas">32</div>
+        <div class="kpi-sub">vencidos + críticos</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-label">Accidentes Laborales</div>
+        <div class="kpi-value">94</div>
+        <div class="kpi-sub">total registrados</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Total Funcionarios</div>
+        <div class="kpi-value">1.727</div>
+        <div class="kpi-sub">en comités mixtos</div>
+      </div>
+    </div>
+
+    <!-- KPI CUMPLIMIENTO GLOBAL -->
+    <div class="kpi-row kpi-row-3" style="margin-bottom:24px">
+      <div class="kpi-card green">
+        <div class="kpi-label">Comités Vigentes</div>
+        <div class="kpi-value">75%</div>
+        <div class="kpi-sub">76 de 101 vigentes</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">PGSST Vigentes</div>
+        <div class="kpi-value">79%</div>
+        <div class="kpi-sub">80 de 101 vigentes</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Días de Baja Totales</div>
+        <div class="kpi-value">921</div>
+        <div class="kpi-sub">promedio 9.8 días/accidente</div>
+      </div>
+    </div>
+
+    <!-- SEMAFORO COMITES -->
+    <div class="section-title">Semáforo — Comités Mixtos</div>
+    <div class="semaforo-grid">
+      <div class="sem-card">
+        <div class="sem-dot red">⚠</div>
+        <div class="sem-info">
+          <div class="sem-label">Vencidos</div>
+          <div class="sem-value" style="color:var(--red)">6</div>
+        </div>
+      </div>
+      <div class="sem-card">
+        <div class="sem-dot orange">!</div>
+        <div class="sem-info">
+          <div class="sem-label">Crítico ≤30 días</div>
+          <div class="sem-value" style="color:var(--orange)">5</div>
+        </div>
+      </div>
+      <div class="sem-card">
+        <div class="sem-dot yellow">~</div>
+        <div class="sem-info">
+          <div class="sem-label">Por Vencer ≤90 días</div>
+          <div class="sem-value" style="color:var(--yellow)">14</div>
+        </div>
+      </div>
+      <div class="sem-card">
+        <div class="sem-dot green">✓</div>
+        <div class="sem-info">
+          <div class="sem-label">Vigentes OK</div>
+          <div class="sem-value" style="color:var(--green)">76</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEMAFORO PGSST -->
+    <div class="section-title">Semáforo — PGSST</div>
+    <div class="semaforo-grid" style="margin-bottom:32px">
+      <div class="sem-card">
+        <div class="sem-dot red">⚠</div>
+        <div class="sem-info">
+          <div class="sem-label">Vencidos</div>
+          <div class="sem-value" style="color:var(--red)">21</div>
+        </div>
+      </div>
+      <div class="sem-card">
+        <div class="sem-dot orange">!</div>
+        <div class="sem-info">
+          <div class="sem-label">Crítico ≤60 días</div>
+          <div class="sem-value" style="color:var(--orange)">0</div>
+        </div>
+      </div>
+      <div class="sem-card">
+        <div class="sem-dot yellow">~</div>
+        <div class="sem-info">
+          <div class="sem-label">Por Vencer ≤120 días</div>
+          <div class="sem-value" style="color:var(--yellow)">0</div>
+        </div>
+      </div>
+      <div class="sem-card">
+        <div class="sem-dot green">✓</div>
+        <div class="sem-info">
+          <div class="sem-label">Vigentes OK</div>
+          <div class="sem-value" style="color:var(--green)">80</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-grid charts-3">
+      <div class="chart-card">
+        <div class="chart-title">Distribución Comités por Estado</div>
+        <div class="chart-container"><canvas id="donutComites" height="220"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Distribución PGSST por Estado</div>
+        <div class="chart-container"><canvas id="donutPGSST" height="220"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Accidentes por Mes</div>
+        <div class="chart-container"><canvas id="lineAcc" height="220"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== PAGE 2: ALERTAS ===== -->
+  <div class="page" id="page-alertas">
+
+    <div class="section-title">Comités Mixtos — Alertas de Vencimiento</div>
+
+    <div class="alert-table-wrap">
+      <div class="table-header">
+        <span class="table-header-title">Filtrar por estado</span>
+        <div class="filter-row">
+          <button class="filter-btn red active" onclick="filterTable('comites', 'all', this)">Todos</button>
+          <button class="filter-btn red" onclick="filterTable('comites', 'Vencido', this)">🔴 Vencido</button>
+          <button class="filter-btn orange" onclick="filterTable('comites', 'Crítico', this)">🟠 Crítico</button>
+          <button class="filter-btn yellow" onclick="filterTable('comites', 'Por Vencer', this)">🟡 Por Vencer</button>
+          <button class="filter-btn greenf" onclick="filterTable('comites', 'Vigente', this)">🟢 Vigente</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="tableComites">
+          <thead>
+            <tr>
+              <th>Sucursal</th>
+              <th>Regional</th>
+              <th>Tipo</th>
+              <th>Fecha Vencimiento</th>
+              <th>Días para Vencer</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyComites"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-title">PGSST — Alertas de Vencimiento</div>
+
+    <div class="alert-table-wrap">
+      <div class="table-header">
+        <span class="table-header-title">Programas con alertas activas</span>
+        <div class="filter-row">
+          <button class="filter-btn red active" onclick="filterTable('pgsst', 'all', this)">Todos</button>
+          <button class="filter-btn red" onclick="filterTable('pgsst', 'Vencido', this)">🔴 Vencido</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table" id="tablePGSST">
+          <thead>
+            <tr>
+              <th>Sucursal</th>
+              <th>Regional</th>
+              <th>Tipo PGSST</th>
+              <th>Responsable</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyPGSST"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BARRAS POR REGIONAL -->
+    <div class="charts-grid charts-2">
+      <div class="chart-card">
+        <div class="chart-title">Comités por Regional — Distribución Semáforo</div>
+        <canvas id="barRegional" height="280"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">PGSST por Regional — Vigentes vs Vencidos</div>
+        <canvas id="barPGSST" height="280"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== PAGE 3: COMITES & PGSST ===== -->
+  <div class="page" id="page-comites">
+
+    <div class="section-title">Indicadores de Cumplimiento</div>
+    <div class="kpi-row kpi-row-4">
+      <div class="kpi-card green">
+        <div class="kpi-label">Comités Vigentes</div>
+        <div class="kpi-value">75%</div>
+        <div class="kpi-sub">76 / 101</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">PGSST Vigentes</div>
+        <div class="kpi-value">79%</div>
+        <div class="kpi-sub">80 / 101</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">PGSST Vencidos</div>
+        <div class="kpi-value">21%</div>
+        <div class="kpi-sub">21 / 101</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Comités Críticos/Vencidos</div>
+        <div class="kpi-value">11%</div>
+        <div class="kpi-sub">11 / 101</div>
+      </div>
+    </div>
+
+    <div class="charts-grid charts-2">
+      <div class="chart-card">
+        <div class="chart-title">Comités Vigentes por Regional</div>
+        <div id="barComitesRegional" style="padding-top:10px"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">PGSST Vigentes por Regional</div>
+        <div id="barPGSSTRegional" style="padding-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:8px">Próximos Vencimientos — Comités</div>
+    <div class="charts-grid charts-2">
+      <div class="chart-card">
+        <div class="chart-title">Timeline de Vencimientos (próximos 90 días)</div>
+        <canvas id="timelineChart" height="260"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Concentración de Vencimientos por Regional</div>
+        <canvas id="bubbleRegional" height="260"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== PAGE 4: ACCIDENTES ===== -->
+  <div class="page" id="page-accidentes">
+
+    <div class="section-title">Indicadores de Accidentabilidad</div>
+    <div class="kpi-row kpi-row-4">
+      <div class="kpi-card red">
+        <div class="kpi-label">Total Accidentes</div>
+        <div class="kpi-value">94</div>
+        <div class="kpi-sub">registros anuales</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Días de Baja Total</div>
+        <div class="kpi-value">921</div>
+        <div class="kpi-sub">días perdidos</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-label">Promedio Días de Baja</div>
+        <div class="kpi-value">9.8</div>
+        <div class="kpi-sub">días por accidente</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Mes con más accidentes</div>
+        <div class="kpi-value">10</div>
+        <div class="kpi-sub">Feb y Sep (empate)</div>
+      </div>
+    </div>
+
+    <!-- Documentación -->
+    <div class="section-title">Estado de Documentación</div>
+    <div class="acc-doc-grid">
+      <div class="doc-stat">
+        <div class="doc-stat-val" style="color:var(--green)">93</div>
+        <div class="doc-stat-label">Con DAT</div>
+      </div>
+      <div class="doc-stat">
+        <div class="doc-stat-val" style="color:var(--green)">92</div>
+        <div class="doc-stat-label">Con Investigación</div>
+      </div>
+      <div class="doc-stat">
+        <div class="doc-stat-val" style="color:var(--red)">1</div>
+        <div class="doc-stat-label">Sin DAT / Investigación</div>
+      </div>
+    </div>
+
+    <div class="charts-grid charts-2">
+      <div class="chart-card">
+        <div class="chart-title">Tendencia Mensual de Accidentes</div>
+        <canvas id="lineAccDetalle" height="250"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Días de Baja por Mes</div>
+        <canvas id="barDias" height="250"></canvas>
+      </div>
+    </div>
+
+    <div class="section-title">Accidentes por Ubicación</div>
+    <div class="alert-table-wrap">
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ubicación</th>
+              <th>Total Accidentes</th>
+              <th>Total Días de Baja</th>
+              <th>Con DAT</th>
+              <th>Con Investigación</th>
+              <th>% Documentación</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyAccidentes"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ===== DATA REAL =====
+const kpiData = {
+  totalComites: 101, totalPGSST: 101, totalAcc: 94,
+  comitesVencidos: 6, comitesCriticos: 5, comitesPorVencer: 14, comitesVigentes: 76,
+  pgsstvencidos: 21, pgsstVigentes: 80,
+  totalDias: 921, totalFunc: 1727
+};
+
+const comitesSemaforo = [
+  {regional:"Oficina Nacional",vigente:1,critico:0,porvencer:0,vencido:0},
+  {regional:"Altiplano Sur",vigente:6,critico:0,porvencer:1,vencido:1},
+  {regional:"Beni",vigente:7,critico:0,porvencer:0,vencido:0},
+  {regional:"Chuquisaca",vigente:1,critico:2,porvencer:4,vencido:2},
+  {regional:"Cochabamba",vigente:7,critico:3,porvencer:1,vencido:0},
+  {regional:"El Alto",vigente:10,critico:0,porvencer:0,vencido:0},
+  {regional:"La Paz",vigente:10,critico:0,porvencer:0,vencido:0},
+  {regional:"Oruro",vigente:7,critico:0,porvencer:0,vencido:0},
+  {regional:"Potosí",vigente:10,critico:0,porvencer:0,vencido:0},
+  {regional:"Santa Cruz Norte",vigente:10,critico:0,porvencer:0,vencido:1},
+  {regional:"Santa Cruz Sur",vigente:3,critico:0,porvencer:5,vencido:2},
+  {regional:"Tarija",vigente:4,critico:0,porvencer:3,vencido:0}
+];
+
+const pgsstData = [
+  {regional:"Tarija",vigente:7,vencido:0},
+  {regional:"El Alto",vigente:8,vencido:2},
+  {regional:"Cochabamba",vigente:9,vencido:2},
+  {regional:"Altiplano Sur",vigente:8,vencido:0},
+  {regional:"Beni",vigente:3,vencido:4},
+  {regional:"Santa Cruz Norte",vigente:4,vencido:7},
+  {regional:"Santa Cruz Sur",vigente:3,vencido:5},
+  {regional:"La Paz",vigente:10,vencido:0},
+  {regional:"Potosí",vigente:10,vencido:0},
+  {regional:"Oruro",vigente:7,vencido:0},
+  {regional:"Chuquisaca",vigente:9,vencido:0},
+  {regional:"Cobija",vigente:1,vencido:1},
+  {regional:"Nacional",vigente:1,vencido:0}
+];
+
+const accMes = [
+  {mes:"Ene",total:7,dias:65},{mes:"Feb",total:10,dias:91},{mes:"Mar",total:7,dias:64},
+  {mes:"Abr",total:7,dias:62},{mes:"May",total:4,dias:50},{mes:"Jun",total:8,dias:81},
+  {mes:"Jul",total:7,dias:93},{mes:"Ago",total:9,dias:93},{mes:"Sep",total:10,dias:100},
+  {mes:"Oct",total:9,dias:86},{mes:"Nov",total:7,dias:72},{mes:"Dic",total:9,dias:64}
+];
+
+const accUbicacion = [
+  {ubi:"Potosí",total:8,dias:80,dat:8,inv:8},
+  {ubi:"Cobija",total:14,dias:249,dat:14,inv:14},
+  {ubi:"Altiplano Sur",total:19,dias:180,dat:19,inv:19},
+  {ubi:"Sucre",total:1,dias:2,dat:1,inv:1},
+  {ubi:"Santa Cruz Norte",total:18,dias:173,dat:18,inv:17},
+  {ubi:"El Alto",total:4,dias:10,dat:4,inv:4},
+  {ubi:"La Paz",total:18,dias:144,dat:18,inv:18},
+  {ubi:"Tarija",total:1,dias:1,dat:1,inv:1},
+  {ubi:"Oruro",total:4,dias:13,dat:4,inv:4},
+  {ubi:"Cochabamba",total:5,dias:52,dat:5,inv:5},
+  {ubi:"Santa Cruz Sur",total:1,dias:2,dat:1,inv:1},
+  {ubi:"Beni",total:1,dias:15,dat:0,inv:0}
+];
+
+const alertasComites = [
+  {s:"Aiquile",r:"Cochabamba",t:"OFICINA FERIAL",f:"27/02/2026",d:4,sem:"Crítico ≤30 días"},
+  {s:"Entre Rios",r:"Cochabamba",t:"AGENCIA",f:"27/02/2026",d:4,sem:"Crítico ≤30 días"},
+  {s:"Monteagudo",r:"Chuquisaca",t:"AGENCIA",f:"18/03/2026",d:23,sem:"Crítico ≤30 días"},
+  {s:"San Juanillo",r:"Chuquisaca",t:"AGENCIA",f:"18/03/2026",d:23,sem:"Crítico ≤30 días"},
+  {s:"Villa Tunari",r:"Cochabamba",t:"AGENCIA",f:"18/03/2026",d:23,sem:"Crítico ≤30 días"},
+  {s:"Sucursal Altiplano Sur",r:"Altiplano Sur",t:"SUCURSAL",f:"02/04/2026",d:38,sem:"Por Vencer ≤90 días"},
+  {s:"Sucursal Chuquisaca",r:"Chuquisaca",t:"SUCURSAL",f:"07/04/2026",d:43,sem:"Por Vencer ≤90 días"},
+  {s:"Villa Loreto",r:"Cochabamba",t:"AGENCIA",f:"14/04/2026",d:50,sem:"Por Vencer ≤90 días"},
+  {s:"Bermejo",r:"Tarija",t:"AGENCIA",f:"22/04/2026",d:58,sem:"Por Vencer ≤90 días"},
+  {s:"Villamontes",r:"Tarija",t:"AGENCIA",f:"22/04/2026",d:58,sem:"Por Vencer ≤90 días"},
+  {s:"Yacuiba",r:"Tarija",t:"AGENCIA",f:"22/04/2026",d:58,sem:"Por Vencer ≤90 días"},
+  {s:"Culpina",r:"Chuquisaca",t:"OFICINA FERIAL",f:"05/05/2026",d:71,sem:"Por Vencer ≤90 días"},
+  {s:"Huacareta",r:"Chuquisaca",t:"OFICINA FERIAL",f:"05/05/2026",d:71,sem:"Por Vencer ≤90 días"},
+  {s:"Abasto",r:"Santa Cruz Sur",t:"AGENCIA",f:"09/05/2026",d:75,sem:"Por Vencer ≤90 días"},
+  {s:"Alto San Pedro",r:"Santa Cruz Sur",t:"AGENCIA",f:"09/05/2026",d:75,sem:"Por Vencer ≤90 días"},
+  {s:"Camiri",r:"Santa Cruz Sur",t:"AGENCIA",f:"09/05/2026",d:75,sem:"Por Vencer ≤90 días"},
+  {s:"Comarapa",r:"Santa Cruz Sur",t:"AGENCIA",f:"09/05/2026",d:75,sem:"Por Vencer ≤90 días"},
+  {s:"Plan 3000",r:"Santa Cruz Sur",t:"AGENCIA",f:"09/05/2026",d:75,sem:"Por Vencer ≤90 días"},
+  {s:"Sucre Central",r:"Chuquisaca",t:"AGENCIA",f:"22/05/2026",d:88,sem:"Por Vencer ≤90 días"},
+  {s:"Camargo",r:"Chuquisaca",t:"AGENCIA",f:"03/01/2026",d:-51,sem:"Vencido"},
+  {s:"Villa Serrano",r:"Chuquisaca",t:"AGENCIA",f:"20/01/2026",d:-34,sem:"Vencido"},
+  {s:"Senkata",r:"Altiplano Sur",t:"AGENCIA",f:"11/02/2026",d:-12,sem:"Vencido"},
+  {s:"Ascensión de Guarayos",r:"Santa Cruz Norte",t:"OFICINA FERIAL",f:"15/02/2026",d:-8,sem:"Vencido"},
+  {s:"Puerto Siles",r:"Santa Cruz Sur",t:"OFICINA FERIAL",f:"—",d:null,sem:"Vencido"},
+  {s:"Agencia Cobija",r:"Santa Cruz Sur",t:"AGENCIA",f:"—",d:null,sem:"Vencido"}
+];
+
+const alertasPGSST = [
+  {s:"Sucursal Beni - Trinidad",r:"Beni",t:"EN REVISIÓN",resp:"Lorena Velasco Batín",sem:"Vencido"},
+  {s:"Sucursal Beni - Guayaramerín",r:"Beni",t:"EN REVISIÓN",resp:"Lorena Velasco Batín",sem:"Vencido"},
+  {s:"Sucursal Beni - San Borja",r:"Beni",t:"EN REVISIÓN",resp:"Lorena Velasco Batín",sem:"Vencido"},
+  {s:"Sucursal Beni - Riberalta",r:"Beni",t:"EN REVISIÓN",resp:"Lorena Velasco Batín",sem:"Vencido"},
+  {s:"Sucursal Cochabamba - Ivirgarzama",r:"Cochabamba",t:"EN REVISIÓN",resp:"Benita Pinto Fuentes",sem:"Vencido"},
+  {s:"Sucursal Cochabamba - Sacaba",r:"Cochabamba",t:"EN REVISIÓN",resp:"Benita Pinto Fuentes",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Norte",r:"Santa Cruz Norte",t:"EN ELABORACIÓN",resp:"Luz Maria Gonzales Virhuez",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Norte - Los Pozos",r:"Santa Cruz Norte",t:"EN ELABORACIÓN",resp:"Luz Maria Gonzales Virhuez",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Norte - Montero",r:"Santa Cruz Norte",t:"EN ELABORACIÓN",resp:"Luz Maria Gonzales Virhuez",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Norte - Yapacani",r:"Santa Cruz Norte",t:"EN ELABORACIÓN",resp:"Luz Maria Gonzales Virhuez",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Norte - San Julian",r:"Santa Cruz Norte",t:"EN ELABORACIÓN",resp:"Luz Maria Gonzales Virhuez",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Norte - San Ignacio",r:"Santa Cruz Norte",t:"EN ELABORACIÓN",resp:"Luz Maria Gonzales Virhuez",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Sur - Camiri",r:"Santa Cruz Sur",t:"EN ELABORACIÓN",resp:"Sarah Vanessa Justiniano",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Sur - La Ramada",r:"Santa Cruz Sur",t:"POR VENCERSE",resp:"Sarah Vanessa Justiniano",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Sur",r:"Santa Cruz Sur",t:"POR VENCERSE",resp:"Sarah Vanessa Justiniano",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Sur - Abasto",r:"Santa Cruz Sur",t:"POR VENCERSE",resp:"Sarah Vanessa Justiniano",sem:"Vencido"},
+  {s:"Sucursal Santa Cruz Sur - Alto San Pedro",r:"Santa Cruz Sur",t:"POR VENCERSE",resp:"Sarah Vanessa Justiniano",sem:"Vencido"},
+  {s:"Sucursal El Alto",r:"El Alto",t:"EN ELABORACIÓN",resp:"Carlos Eduardo Thenier Lopez",sem:"Vencido"},
+  {s:"Sucursal El Alto - 16 de Julio",r:"El Alto",t:"EN REVISIÓN",resp:"Jenny Silvana Vargas Mejillones",sem:"Vencido"},
+  {s:"Cobija - Oficina Ferial Puerto Siles",r:"Cobija",t:"EN ELABORACIÓN",resp:"Sarah Vanessa Justiniano",sem:"Vencido"}
+];
+
+// ===== HELPERS =====
+const COLORS = {
+  'Vencido': '#ff3b5c',
+  'Crítico ≤30 días': '#ff8c00',
+  'Por Vencer ≤90 días': '#f5c518',
+  'Vigente': '#00e676'
+};
+
+function getBadgeClass(sem) {
+  if (!sem) return 'vencido';
+  if (sem.includes('Vencido')) return 'vencido';
+  if (sem.includes('Crítico')) return 'critico';
+  if (sem.includes('Por Vencer')) return 'porvencer';
+  return 'vigente';
+}
+
+function getBadgeLabel(sem) {
+  if (!sem) return 'Vencido';
+  if (sem.includes('Vencido')) return '🔴 Vencido';
+  if (sem.includes('Crítico')) return '🟠 Crítico';
+  if (sem.includes('Por Vencer')) return '🟡 Por Vencer';
+  return '🟢 Vigente';
+}
+
+function getDiasColor(d) {
+  if (d === null || d < 0) return '#ff3b5c';
+  if (d <= 30) return '#ff8c00';
+  if (d <= 90) return '#f5c518';
+  return '#00e676';
+}
+
+// ===== DATE =====
+document.getElementById('currentDate').textContent =
+  new Date().toLocaleDateString('es-BO', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+// ===== TABS =====
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('page-' + name).classList.add('active');
+}
+
+// ===== POPULATE TABLES =====
+function buildComitesTable(filter) {
+  const tbody = document.getElementById('tbodyComites');
+  const rows = filter === 'all' ? alertasComites : alertasComites.filter(r => r.sem.includes(filter));
+  tbody.innerHTML = rows.map(r => {
+    const dc = getDiasColor(r.d);
+    const barW = r.d === null ? 0 : Math.min(100, Math.max(0, (r.d / 90) * 100));
+    const diasTxt = r.d === null ? '—' : (r.d < 0 ? r.d + ' días' : '+' + r.d + ' días');
+    return `<tr data-sem="${r.sem}">
+      <td><strong>${r.s}</strong></td>
+      <td style="color:var(--muted);font-size:12px">${r.r}</td>
+      <td style="font-size:11px;font-family:var(--font-mono);color:var(--muted)">${r.t}</td>
+      <td style="font-family:var(--font-mono);font-size:12px">${r.f}</td>
+      <td>
+        <div class="dias-bar-wrap">
+          <span class="dias-num" style="color:${dc}">${diasTxt}</span>
+          <div class="dias-bar"><div class="dias-bar-fill" style="width:${barW}%;background:${dc}"></div></div>
+        </div>
+      </td>
+      <td><span class="badge ${getBadgeClass(r.sem)}">${getBadgeLabel(r.sem)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function buildPGSSTTable(filter) {
+  const tbody = document.getElementById('tbodyPGSST');
+  const rows = filter === 'all' ? alertasPGSST : alertasPGSST.filter(r => r.sem.includes(filter));
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td><strong>${r.s}</strong></td>
+    <td style="color:var(--muted);font-size:12px">${r.r}</td>
+    <td style="font-family:var(--font-mono);font-size:11px;color:var(--orange)">${r.t}</td>
+    <td style="font-size:12px">${r.resp}</td>
+    <td><span class="badge vencido">🔴 Vencido</span></td>
+  </tr>`).join('');
+}
+
+function buildAccTable() {
+  const tbody = document.getElementById('tbodyAccidentes');
+  tbody.innerHTML = accUbicacion.sort((a,b)=>b.total-a.total).map(r => {
+    const pct = r.total > 0 ? Math.round(((r.dat + r.inv) / (r.total * 2)) * 100) : 0;
+    const pctColor = pct >= 90 ? 'var(--green)' : pct >= 70 ? 'var(--yellow)' : 'var(--red)';
+    return `<tr>
+      <td><strong>${r.ubi}</strong></td>
+      <td style="font-family:var(--font-mono);color:var(--red)">${r.total}</td>
+      <td style="font-family:var(--font-mono);color:var(--orange)">${r.dias}</td>
+      <td style="font-family:var(--font-mono);color:${r.dat===r.total?'var(--green)':'var(--red)'}">${r.dat}</td>
+      <td style="font-family:var(--font-mono);color:${r.inv===r.total?'var(--green)':'var(--red)'}">${r.inv}</td>
+      <td>
+        <div class="dias-bar-wrap">
+          <span class="dias-num" style="color:${pctColor}">${pct}%</span>
+          <div class="dias-bar"><div class="dias-bar-fill" style="width:${pct}%;background:${pctColor}"></div></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(type, filter, btn) {
+  const groupBtns = btn.parentElement.querySelectorAll('.filter-btn');
+  groupBtns.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (type === 'comites') buildComitesTable(filter === 'all' ? 'all' : filter);
+  if (type === 'pgsst') buildPGSSTTable(filter === 'all' ? 'all' : filter);
+}
+
+// ===== REGIONAL BARS (custom HTML) =====
+function buildRegionalBars() {
+  const comitesEl = document.getElementById('barComitesRegional');
+  const pgsstEl = document.getElementById('barPGSSTRegional');
+  const maxC = Math.max(...comitesSemaforo.map(r => r.vigente + r.critico + r.porvencer + r.vencido));
+  const maxP = Math.max(...pgsstData.map(r => r.vigente + r.vencido));
+
+  comitesEl.innerHTML = comitesSemaforo.map(r => {
+    const total = r.vigente + r.critico + r.porvencer + r.vencido;
+    const pct = Math.round((r.vigente/total)*100);
+    const w = Math.round((r.vigente/maxC)*100);
+    return `<div class="regional-bar-row">
+      <div class="reg-name">${r.regional}</div>
+      <div class="reg-bar">
+        <div class="reg-bar-fill" style="width:${w}%;background:var(--green)">${r.vigente}</div>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);min-width:32px">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  pgsstEl.innerHTML = pgsstData.map(r => {
+    const total = r.vigente + r.vencido;
+    const pct = Math.round((r.vigente/total)*100);
+    const w = Math.round((r.vigente/maxP)*100);
+    const color = pct < 50 ? 'var(--red)' : pct < 80 ? 'var(--yellow)' : 'var(--green)';
+    return `<div class="regional-bar-row">
+      <div class="reg-name">${r.regional}</div>
+      <div class="reg-bar">
+        <div class="reg-bar-fill" style="width:${w}%;background:${color}">${r.vigente}</div>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);min-width:32px">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ===== CHARTS =====
+Chart.defaults.color = '#6b7a99';
+Chart.defaults.borderColor = '#252d3d';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 11;
+
+function buildCharts() {
+  // Donut Comités
+  new Chart(document.getElementById('donutComites'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Vigentes', 'Por Vencer', 'Críticos', 'Vencidos'],
+      datasets: [{
+        data: [76, 14, 5, 6],
+        backgroundColor: ['#00e676','#f5c518','#ff8c00','#ff3b5c'],
+        borderColor: '#131720',
+        borderWidth: 3,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      cutout: '68%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
+      }
+    }
+  });
+
+  // Donut PGSST
+  new Chart(document.getElementById('donutPGSST'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Vigentes', 'Vencidos'],
+      datasets: [{
+        data: [80, 21],
+        backgroundColor: ['#00e676','#ff3b5c'],
+        borderColor: '#131720',
+        borderWidth: 3,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      cutout: '68%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' } }
+      }
+    }
+  });
+
+  // Line Accidentes (resumen)
+  new Chart(document.getElementById('lineAcc'), {
+    type: 'line',
+    data: {
+      labels: accMes.map(r => r.mes),
+      datasets: [{
+        label: 'Accidentes',
+        data: accMes.map(r => r.total),
+        borderColor: '#ff3b5c',
+        backgroundColor: 'rgba(255,59,92,0.1)',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#ff3b5c',
+        pointRadius: 4
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#252d3d' } },
+        y: { grid: { color: '#252d3d' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // Stacked bar regional comités
+  const regLabels = comitesSemaforo.map(r => r.regional.replace('Santa Cruz ', 'SCZ ').replace('Altiplano ', 'Altip.'));
+  new Chart(document.getElementById('barRegional'), {
+    type: 'bar',
+    data: {
+      labels: regLabels,
+      datasets: [
+        { label: 'Vigente', data: comitesSemaforo.map(r=>r.vigente), backgroundColor: '#00e676' },
+        { label: 'Por Vencer', data: comitesSemaforo.map(r=>r.porvencer), backgroundColor: '#f5c518' },
+        { label: 'Crítico', data: comitesSemaforo.map(r=>r.critico), backgroundColor: '#ff8c00' },
+        { label: 'Vencido', data: comitesSemaforo.map(r=>r.vencido), backgroundColor: '#ff3b5c' }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        x: { stacked: true, grid: { color: '#252d3d' } },
+        y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Bar PGSST regional
+  new Chart(document.getElementById('barPGSST'), {
+    type: 'bar',
+    data: {
+      labels: pgsstData.map(r => r.regional.replace('Santa Cruz ', 'SCZ ').replace('Nacional', 'Nac.')),
+      datasets: [
+        { label: 'Vigentes', data: pgsstData.map(r=>r.vigente), backgroundColor: '#00d4ff' },
+        { label: 'Vencidos', data: pgsstData.map(r=>r.vencido), backgroundColor: '#ff3b5c' }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        x: { stacked: true, grid: { color: '#252d3d' } },
+        y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Timeline vencimientos (scatter/bar agrupado por mes)
+  const timelineData = {
+    'Feb 2026': 2, 'Mar 2026': 3, 'Abr 2026': 5, 'May 2026': 7
+  };
+  new Chart(document.getElementById('timelineChart'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(timelineData),
+      datasets: [{
+        label: 'Comités a vencer',
+        data: Object.values(timelineData),
+        backgroundColor: ['#ff3b5c','#ff8c00','#f5c518','#f5c518'],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: '#252d3d' }, beginAtZero: true, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+
+  // Bubble concentración
+  new Chart(document.getElementById('bubbleRegional'), {
+    type: 'bubble',
+    data: {
+      datasets: comitesSemaforo.filter(r => r.vencido + r.critico + r.porvencer > 0).map((r, i) => ({
+        label: r.regional,
+        data: [{
+          x: r.vencido + r.critico,
+          y: r.porvencer,
+          r: Math.max(6, (r.vencido + r.critico + r.porvencer) * 4)
+        }],
+        backgroundColor: `rgba(${[255,200,100,0,180,255,150][i%7]},${[59,140,212,230,59,140,200][i%7]},${[92,0,255,118,200,0,100][i%7]},0.6)`
+      }))
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } },
+      scales: {
+        x: { title: { display: true, text: 'Vencidos + Críticos', font: { size: 10 } }, grid: { color: '#252d3d' }, beginAtZero: true },
+        y: { title: { display: true, text: 'Por Vencer', font: { size: 10 } }, grid: { color: '#252d3d' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // Line accidentes detalle
+  new Chart(document.getElementById('lineAccDetalle'), {
+    type: 'line',
+    data: {
+      labels: accMes.map(r => r.mes),
+      datasets: [{
+        label: 'Accidentes',
+        data: accMes.map(r => r.total),
+        borderColor: '#ff3b5c',
+        backgroundColor: 'rgba(255,59,92,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#ff3b5c',
+        pointRadius: 5,
+        pointHoverRadius: 8
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#252d3d' } },
+        y: { grid: { color: '#252d3d' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // Bar días de baja
+  new Chart(document.getElementById('barDias'), {
+    type: 'bar',
+    data: {
+      labels: accMes.map(r => r.mes),
+      datasets: [{
+        label: 'Días de Baja',
+        data: accMes.map(r => r.dias),
+        backgroundColor: 'rgba(255,140,0,0.7)',
+        borderColor: '#ff8c00',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: '#252d3d' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+// ===== INIT =====
+buildComitesTable('all');
+buildPGSSTTable('all');
+buildAccTable();
+buildRegionalBars();
+buildCharts();
+</script>
+</body>
+</html>
